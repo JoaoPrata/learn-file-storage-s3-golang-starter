@@ -1,9 +1,10 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
-	"net/http"
 	"io"
+	"net/http"
 
 	"github.com/bootdotdev/learn-file-storage-s3-golang-starter/internal/auth"
 	"github.com/google/uuid"
@@ -39,7 +40,7 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 
 	if userID != video.UserID {
 		w.WriteHeader(http.StatusUnauthorized)
-		return 
+		return
 	}
 
 	const maxMemory = 10 << 20
@@ -56,14 +57,9 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	thumbnail := thumbnail{
-		data: data,
-		mediaType: mediaType,
-	}
-	videoThumbnails[videoID] = thumbnail
-
-	thumbnailURL := fmt.Sprintf("http://localhost:%s/api/thumbnails/%s", cfg.port, videoIDString)
-	video.ThumbnailURL = &thumbnailURL
+	base64Encoded := base64.StdEncoding.EncodeToString(data)
+	base64DataURL := fmt.Sprintf("data:%s;base64,%s", mediaType, base64Encoded)
+	video.ThumbnailURL = &base64DataURL
 
 	err = cfg.db.UpdateVideo(video)
 	if err != nil {
