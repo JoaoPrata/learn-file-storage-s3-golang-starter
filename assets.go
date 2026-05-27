@@ -25,8 +25,8 @@ func getAssetPath(videoID uuid.UUID, mediaType string) string {
 	return fmt.Sprintf("%s%s", videoID, ext)
 }
 
-func getAssetURL(assetPath string) string {
-	return fmt.Sprintf("/assets/%s", assetPath)
+func (cfg apiConfig) getAssetURL(assetPath string) string {
+	return fmt.Sprintf("http://localhost:%s/assets/%s", cfg.port, assetPath)
 }
 
 func mediaTypeToExt(mediaType string) string {
