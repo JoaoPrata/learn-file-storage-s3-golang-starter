@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"os"
 
@@ -50,7 +51,16 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 		respondWithError(w, http.StatusInternalServerError, "Couldn't read form file", err)
 		return
 	}
-	mediaType := fileHeader.Header.Get("Content-Type")
+
+	mediaType, _, err := mime.ParseMediaType(fileHeader.Header.Get("Content-Type"))
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid content type", err)
+		return
+	}
+	if mediaType != "image/jpeg" && mediaType != "image/png" {
+		respondWithError(w, http.StatusBadRequest, "Thumbnail must be a JPEG or PNG", nil)
+		return
+	}
 
 	assetPath := getAssetPath(videoID, mediaType)
 	assetDiskPath := cfg.getAssetDiskPath(assetPath)
