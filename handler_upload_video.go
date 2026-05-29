@@ -6,6 +6,7 @@ import (
 	"mime"
 	"net/http"
 	"os"
+	"path"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/bootdotdev/learn-file-storage-s3-golang-starter/internal/auth"
@@ -79,10 +80,27 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 	}
 	tempFile.Seek(0, io.SeekStart)
 
-	filePath := getAssetPath(mediaType)
+	directory := ""
+	aspectRatio, err := getVideoAspectRation(tempFile.Name())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't determine video aspect ratio", err)
+		return
+	}
+	switch aspectRatio {
+	case "16:9":
+		directory = "landscape"
+	case "9:16":
+		directory = "portrait"
+	default:
+		directory = "other"
+	}
+
+	key := getAssetPath(mediaType)
+	key = path.Join(directory, key)
+
 	_, err = cfg.s3Client.PutObject(r.Context(), &s3.PutObjectInput{
 		Bucket:      &cfg.s3Bucket,
-		Key:         &filePath,
+		Key:         &key,
 		Body:        tempFile,
 		ContentType: &mediaType,
 	})
@@ -91,7 +109,12 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	url := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", cfg.s3Bucket, cfg.s3Region, filePath)
+	url := fmt.Sprintf(
+		"https://%s.s3.%s.amazonaws.com/%s",
+		cfg.s3Bucket,
+		cfg.s3Region,
+		key)
+
 	video.VideoURL = &url
 	err = cfg.db.UpdateVideo(video)
 	if err != nil {
