@@ -132,10 +132,5 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Couldn't generate video URL", err)
-		return
-	}
-
 	respondWithJSON(w, http.StatusOK, video)
 }
